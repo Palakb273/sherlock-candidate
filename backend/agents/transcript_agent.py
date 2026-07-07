@@ -56,6 +56,32 @@ class TranscriptSignalAgent(Agent):
                             explanation=f'Was addressed as "{addressed_name}" by another participant, matching candidate record "{candidate_name}".',
                             confidence_in_signal=0.7,
                         ))
+
+            self_intro_name = self._extract_self_intro(recent_text)
+            if self_intro_name:
+                from agents.metadata_agent import name_similarity
+                sim = name_similarity(self_intro_name, candidate_name)
+                if sim >= 0.6:
+                    out.append(Evidence(
+                        participant_id=p.participant_id, agent=self.name,
+                        signal="self_introduction_matches_candidate", score=0.95, weight=self.default_weight,
+                        explanation=f'Self-introduced as "{self_intro_name}", matching candidate record "{candidate_name}".',
+                        confidence_in_signal=0.9,
+                    ))
+                elif sim >= 0.35:
+                    out.append(Evidence(
+                        participant_id=p.participant_id, agent=self.name,
+                        signal="self_introduction_partial_match", score=0.75, weight=self.default_weight,
+                        explanation=f'Self-introduced as "{self_intro_name}", partially matching candidate record "{candidate_name}".',
+                        confidence_in_signal=0.75,
+                    ))
+                else:
+                    out.append(Evidence(
+                        participant_id=p.participant_id, agent=self.name,
+                        signal="self_introduction_no_match", score=-0.3, weight=self.default_weight * 0.7,
+                        explanation=f'Self-introduced as "{self_intro_name}", which does not match candidate record "{candidate_name}".',
+                        confidence_in_signal=0.6,
+                    ))
         return out
 
     def _best_other_match(self, active, speaker_id, name):
@@ -68,6 +94,34 @@ class TranscriptSignalAgent(Agent):
         if len(candidates) == 1:
             return candidates[0]
         return max(candidates, key=lambda p: name_similarity(p.display_name, name))
+    
+    def _extract_self_intro(self, text: str) -> str | None:
+        if self._client:
+            name = self._llm_extract(text, mode="self_intro")
+            if name:
+                return name
+        low = text.lower()
+        for pat in SELF_INTRO_PATTERNS:
+            m = re.search(pat, low)
+            if m:
+                return m.group(1).title()
+        m = re.search(r"\bI'?m ([A-Z][a-zA-Z]+(?:\s[A-Z][a-zA-Z]+){0,2})\s*,", text)
+        if m:
+            return m.group(1)
+        return None
+
+    def _extract_addressed_as(self, text: str) -> str | None:
+        if self._client:
+            name = self._llm_extract(text, mode="addressed_as")
+            if name:
+                return name
+        low = text.lower()
+        for pat in THIRD_PERSON_INTRO_PATTERNS:
+            m = re.search(pat, low)
+            if m:
+                return m.group(1).title()
+        return None
+
     def _extract_addressed_as(self, text: str) -> str | None:
         low = text.lower()
         for pat in THIRD_PERSON_INTRO_PATTERNS:
@@ -75,3 +129,35 @@ class TranscriptSignalAgent(Agent):
             if m:
                 return m.group(1).title()
         return None
+    
+    def _llm_extract(self, text: str, mode: str) -> str | None:
+        try:
+            prompt = {
+                "self_intro": (
+                    "Extract the name this SPEAKER used to introduce THEMSELVES, if any "
+                    "(e.g. 'Hi my name is X', 'This is X speaking'). "
+                ),
+                "addressed_as": (
+                    "Extract the name someone else used to address THIS SPEAKER "
+                    "(e.g. 'Welcome, X', 'So X, tell us about yourself'). "
+                ),
+            }[mode]
+            resp = self._client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"{prompt}Respond with ONLY a JSON object: "
+                        '{"name": "<name or null>"}. No other text.\n\n'
+                        f"Transcript snippet:\n{text}"
+                    ),
+                }],
+                temperature=0,
+                max_tokens=50,
+            )
+            raw = resp.choices[0].message.content.strip()
+            raw = re.sub(r"^```json|```$", "", raw).strip()
+            data = json.loads(raw)
+            return data.get("name") or None
+        except Exception:
+            return None
