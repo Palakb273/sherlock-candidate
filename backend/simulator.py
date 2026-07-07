@@ -90,3 +90,20 @@ SCENARIOS["multiple_observers"] = {
          "text": "Great, thank you, let's continue."},
     ],
 }
+
+SCENARIOS["name_change_midcall"] = {
+    "title": "Candidate changes display name mid-call",
+    "description": "Starts as a device name, switches to a nickname later -- identity must persist across the rename.",
+    "meta": _base_meta(),
+    "events": [
+        {"t": 0, "type": "join", "participant_id": "p1", "display_name": "Alex Chen"},
+        {"t": 2, "type": "join", "participant_id": "p2", "display_name": "DESKTOP-88AJ2"},
+        {"t": 6, "type": "speech", "participant_id": "p2", "duration_sec": 6,
+         "text": "Hi, this is Riya Sharma speaking, sorry about the odd display name."},
+        {"t": 20, "type": "display_name_change", "participant_id": "p2", "display_name": "Riya S."},
+        {"t": 25, "type": "speech", "participant_id": "p2", "duration_sec": 20,
+         "text": "Fixed my display name now, should be clearer."},
+        {"t": 50, "type": "speech", "participant_id": "p1", "duration_sec": 5,
+         "text": "Perfect, let's get into the questions."},
+    ],
+}
