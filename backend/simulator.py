@@ -33,3 +33,19 @@ SCENARIOS["device_name"] = {
     ],
 }
 
+SCENARIOS["nickname"] = {
+    "title": 'Candidate joins as nickname "Rii"',
+    "description": "Metadata match is weak; interviewer addressing candidate by real name confirms identity.",
+    "meta": _base_meta(),
+    "events": [
+        {"t": 0, "type": "join", "participant_id": "p1", "display_name": "Priya Nair"},
+        {"t": 3, "type": "join", "participant_id": "p2", "display_name": "Rii"},
+        {"t": 5, "type": "webcam", "participant_id": "p2", "on": True},
+        {"t": 8, "type": "speech", "participant_id": "p1", "duration_sec": 4,
+         "text": "So Riya, can you walk us through your background?"},
+        {"t": 14, "type": "speech", "participant_id": "p2", "duration_sec": 25,
+         "text": "Sure, I'm a third year CS student and I've built a few AI projects recently."},
+        {"t": 42, "type": "speech", "participant_id": "p1", "duration_sec": 5,
+         "text": "Nice, let's dive into the technical round."},
+    ],
+}
