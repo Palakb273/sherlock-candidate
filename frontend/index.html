@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Sherlock — Candidate Identification</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --ink: #12151a;
+    --paper: #eef0f2;
+    --line: #2a2f38;
+    --accent: #4fd1a5;
+    --accent-dim: #2a5f4d;
+    --warn: #e0a64f;
+    --danger: #d9635a;
+    --muted: #8a92a0;
+    --mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--sans);
+    min-height: 100vh;
+  }
+  header {
+    padding: 28px 32px 18px;
+    border-bottom: 1px solid #22262e;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .sub { color: var(--muted); font-size: 13.5px; margin-top: 6px; max-width: 640px; }
+
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 0; min-height: calc(100vh - 110px); }
+  .sidebar {
+    border-right: 1px solid #22262e;
+    padding: 20px;
+  }
+  .sidebar h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 12px; }
+  .scenario {
+    border: 1px solid #262b34;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .scenario:hover { border-color: var(--accent); background: #171b21; }
+  .scenario.active { border-color: var(--accent); background: #16241f; }
+  .scenario .t { font-weight: 600; font-size: 13.5px; }
+  .scenario .d { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+  .main { padding: 24px 32px; }
+  .status-bar {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--mono); font-size: 13px;
+    padding: 10px 16px; border-radius: 8px;
+    background: #171b21; border: 1px solid #262b34;
+    margin-bottom: 22px;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .status-bar.confident .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .status-bar.ambiguous .dot { background: var(--warn); }
+  .status-bar.insufficient_data .dot { background: var(--muted); }
+  #explanation { color: var(--paper); }
+
+  .participants { display: flex; flex-direction: column; gap: 14px; }
+  .p-card {
+    border: 1px solid #262b34;
+    border-radius: 10px;
+    padding: 16px 18px;
+    background: #14171d;
+    position: relative;
+    overflow: hidden;
+  }
+  .p-card.selected { border-color: var(--accent); }
+  .p-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .p-name { font-weight: 650; font-size: 16px; }
+  .p-conf { font-family: var(--mono); font-size: 20px; font-weight: 600; }
+  .bar-track { height: 6px; background: #22262e; border-radius: 4px; margin: 10px 0 12px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--muted); transition: width .35s ease, background .35s ease; }
+  .selected .bar-fill { background: var(--accent); }
+  .reasons { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .reasons li {
+    font-size: 12.5px; color: #b7bec9; line-height: 1.4;
+    padding-left: 14px; position: relative;
+  }
+  .reasons li::before { content: '—'; position: absolute; left: 0; color: var(--muted); }
+  .badge {
+    font-family: var(--mono); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 2px 8px; border-radius: 20px;
+    background: var(--accent-dim); color: var(--accent);
+  }
+
+  .event-log {
+    margin-top: 26px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    max-height: 160px;
+    overflow-y: auto;
+    border-top: 1px solid #22262e;
+    padding-top: 12px;
+  }
+  .event-log div { padding: 2px 0; }
+  .placeholder { color: var(--muted); font-size: 14px; padding: 40px 0; text-align: center; }
+  button.speed {
+    font-family: var(--mono); font-size: 11px; background: none; color: var(--muted);
+    border: 1px solid #262b34; border-radius: 6px; padding: 4px 10px; cursor: pointer; margin-left: auto;
+  }
+  button.speed.active { color: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Live Interview Fraud Detection</div>
+  <h1>Candidate Identification Engine</h1>
+  <div class="sub">An event-driven pool of independent signal agents (metadata, transcript, behavior, join-timing) continuously vote on who the real candidate is. A fusion agent arbitrates and explains its reasoning — confidence updates live as the meeting unfolds.</div>
+</header>
+
+<div class="layout">
+  <div class="sidebar">
+    <h3>Scenarios</h3>
+    <div id="scenario-list"></div>
+  </div>
+
+  <div class="main">
+    <div id="status-bar" class="status-bar">
+      <div class="dot"></div>
+      <div id="explanation">Select a scenario to start the simulated meeting.</div>
+      <button class="speed active" data-speed="4">4x</button>
+      <button class="speed" data-speed="1">1x</button>
+      <button class="speed" data-speed="10">10x</button>
+    </div>
+
+    <div id="participants" class="participants">
+      <div class="placeholder">No active meeting. Pick a scenario on the left.</div>
+    </div>
+
+    <div id="event-log" class="event-log"></div>
+  </div>
+</div>
+
+<script>
+const API = location.origin.replace(/^http/, 'http');
+const WS = location.origin.replace(/^http/, 'ws');
+let ws = null;
+let speed = 4;
+
+async function loadScenarios() {
+  const res = await fetch(API + '/api/scenarios');
+  const scenarios = await res.json();
+  const list = document.getElementById('scenario-list');
+  list.innerHTML = '';
+  scenarios.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'scenario';
+    el.dataset.id = s.id;
+    el.innerHTML = `<div class="t">${s.title}</div><div class="d">${s.description}</div>`;
+    el.onclick = () => runScenario(s.id, el);
+    list.appendChild(el);
+  });
+}
+
+document.querySelectorAll('button.speed').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('button.speed').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    speed = parseFloat(btn.dataset.speed);
+  };
+});
+
+function runScenario(id, el) {
+  document.querySelectorAll('.scenario').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('participants').innerHTML = '';
+  document.getElementById('event-log').innerHTML = '';
+  setStatus('insufficient_data', 'Meeting starting…');
+
+  if (ws) ws.close();
+  ws = new WebSocket(`${WS}/ws/run/${id}?speed=${speed}`);
+
+  ws.onmessage = (msg) => {
+    const data = JSON.parse(msg.data);
+    if (data.done) { logEvent('— simulation complete —'); return; }
+    if (data.error) { setStatus('ambiguous', data.error); return; }
+    render(data);
+  };
+}
+
+function setStatus(status, text) {
+  const bar = document.getElementById('status-bar');
+  bar.className = 'status-bar ' + status;
+  document.getElementById('explanation').textContent = text;
+}
+
+function render(snapshot) {
+  setStatus(snapshot.status, snapshot.explanation);
+  logEvent(describeEvent(snapshot.event));
+
+  const container = document.getElementById('participants');
+  container.innerHTML = '';
+  snapshot.participants
+    .slice()
+    .sort((a, b) => b.confidence - a.confidence)
+    .forEach(p => {
+      const isSelected = p.participant_id === snapshot.selected_participant_id;
+      const card = document.createElement('div');
+      card.className = 'p-card' + (isSelected ? ' selected' : '');
+      card.innerHTML = `
+        <div class="p-row">
+          <div class="p-name">${p.display_name} ${isSelected ? '<span class="badge">candidate</span>' : ''}</div>
+          <div class="p-conf">${Math.round(p.confidence * 100)}%</div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.max(3, p.confidence * 100)}%"></div></div>
+        <ul class="reasons">${p.top_reasons.map(r => `<li>${r}</li>`).join('') || '<li>No signal yet.</li>'}</ul>
+      `;
+      container.appendChild(card);
+    });
+}
+
+function describeEvent(e) {
+  switch (e.type) {
+    case 'join': return `${e.participant_id} joined as "${e.display_name}"`;
+    case 'leave': return `${e.participant_id} left the meeting`;
+    case 'display_name_change': return `${e.participant_id} changed display name to "${e.display_name}"`;
+    case 'webcam': return `${e.participant_id} turned webcam ${e.on ? 'on' : 'off'}`;
+    case 'screen_share': return `${e.participant_id} ${e.on ? 'started' : 'stopped'} screen sharing`;
+    case 'speech': return `${e.participant_id}: "${(e.text || '').slice(0, 70)}"`;
+    default: return JSON.stringify(e);
+  }
+}
+
+function logEvent(text) {
+  const log = document.getElementById('event-log');
+  const line = document.createElement('div');
+  line.textContent = '> ' + text;
+  log.prepend(line);
+}
+
+loadScenarios();
+</script>
+
+</body>
+</html>
