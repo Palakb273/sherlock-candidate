@@ -49,3 +49,25 @@ SCENARIOS["nickname"] = {
          "text": "Nice, let's dive into the technical round."},
     ],
 }
+
+SCENARIOS["wrong_invite_name"] = {
+    "title": "Interviewer typed the wrong candidate name in the invite",
+    "description": "Calendar says 'Ritika Sharma'; the real candidate self-identifies as Riya Sharma on the call.",
+    "meta": ExternalMetadata(
+        candidate_name="Ritika Sharma",  # <- typo'd in the ATS/calendar invite
+        candidate_email="riya.sharma@gmail.com",
+        interviewer_names=["Alex Chen"],
+        scheduled_start_epoch=time.time(),
+    ),
+    "events": [
+        {"t": 0, "type": "join", "participant_id": "p1", "display_name": "Alex Chen"},
+        {"t": 2, "type": "join", "participant_id": "p2", "display_name": "Riya S"},
+        {"t": 5, "type": "webcam", "participant_id": "p2", "on": True},
+        {"t": 8, "type": "speech", "participant_id": "p2", "duration_sec": 6,
+         "text": "Hi, my name is Riya Sharma, nice to meet you."},
+        {"t": 16, "type": "speech", "participant_id": "p1", "duration_sec": 20,
+         "text": "Great, let's begin the interview then."},
+        {"t": 38, "type": "speech", "participant_id": "p2", "duration_sec": 30,
+         "text": "Sounds good, happy to get started."},
+    ],
+}
