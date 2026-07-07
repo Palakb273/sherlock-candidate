@@ -1,5 +1,5 @@
-from dotenv import load_dotenv
 from __future__ import annotations
+from dotenv import load_dotenv
 import asyncio
 import copy
 import time
@@ -7,7 +7,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from meeting_state import MeetingState
-from orchestrator import SherlockOrchestrator
+from orchestrator import Orchestrator
 from simulator import SCENARIOS
 
 load_dotenv()

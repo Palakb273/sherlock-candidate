@@ -91,6 +91,7 @@ class FusionAgent:
             explanation = "No participant has strong enough combined evidence yet; treating identity as unresolved."
 
         return FusionResult(verdicts, status, selected, explanation)
-def _explain(self, v: ParticipantVerdict, status: str) -> str:
+
+    def _explain(self, v: ParticipantVerdict, status: str) -> str:
         reasons = "; ".join(v.top_reasons) if v.top_reasons else "combined weak signals"
         return f'Identified "{v.display_name}" as the candidate with {v.confidence:.0%} confidence. Key evidence: {reasons}.'
