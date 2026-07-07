@@ -7,7 +7,7 @@ from agents.transcript_agent import TranscriptSignalAgent
 from meeting_state import MeetingState
 
 
-class SherlockOrchestrator:
+class Orchestrator:
     def __init__(self, state: MeetingState):
         self.state = state
         self.agents = [
