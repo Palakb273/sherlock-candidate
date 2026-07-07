@@ -71,3 +71,22 @@ SCENARIOS["wrong_invite_name"] = {
          "text": "Sounds good, happy to get started."},
     ],
 }
+
+SCENARIOS["multiple_observers"] = {
+    "title": "Multiple silent observers in the room",
+    "description": "Two extra people join and never speak; behavioral + transcript signals isolate the real candidate.",
+    "meta": _base_meta(),
+    "events": [
+        {"t": 0, "type": "join", "participant_id": "p1", "display_name": "Alex Chen"},
+        {"t": 1, "type": "join", "participant_id": "p3", "display_name": "Guest 1"},
+        {"t": 1.5, "type": "join", "participant_id": "p4", "display_name": "Guest 2"},
+        {"t": 3, "type": "join", "participant_id": "p2", "display_name": "Riya Sharma"},
+        {"t": 5, "type": "webcam", "participant_id": "p2", "on": True},
+        {"t": 9, "type": "speech", "participant_id": "p1", "duration_sec": 4,
+         "text": "Riya, can you tell us about yourself?"},
+        {"t": 15, "type": "speech", "participant_id": "p2", "duration_sec": 30,
+         "text": "Sure! I'm Riya, a computer science student focused on AI and ML."},
+        {"t": 48, "type": "speech", "participant_id": "p1", "duration_sec": 6,
+         "text": "Great, thank you, let's continue."},
+    ],
+}
